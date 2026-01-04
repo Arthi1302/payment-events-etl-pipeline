@@ -6,9 +6,9 @@ CURATED_DATA_DIR = "data/curated"
 CURATED_FILE_NAME = "payments_curated.parquet"
 
 
-def read_raw_data():
+def read_raw_data() -> pd.DataFrame:
     """
-    Read all CSV and JSON files from raw data directory
+    Read all CSV and JSON files from the raw data directory
     """
     dataframes = []
 
@@ -23,12 +23,15 @@ def read_raw_data():
             df = pd.read_json(file_path, lines=True)
             dataframes.append(df)
 
+    if not dataframes:
+        raise ValueError("❌ No raw data files found")
+
     return pd.concat(dataframes, ignore_index=True)
 
 
 def transform_data(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Apply cleaning and standardization rules
+    Clean, standardize, and deduplicate payment events
     """
 
     # Standardize column names
@@ -49,12 +52,19 @@ def transform_data(df: pd.DataFrame) -> pd.DataFrame:
     # Drop records with critical nulls
     df = df.dropna(subset=["transaction_id", "user_id", "event_timestamp"])
 
+    # Deduplicate transactions (same event from multiple formats)
+    before = len(df)
+    df = df.drop_duplicates(subset=["transaction_id"])
+    after = len(df)
+
+    print(f"🧹 Removed {before - after} duplicate records during transformation")
+
     return df
 
 
 def write_curated_data(df: pd.DataFrame):
     """
-    Write curated data as Parquet
+    Write curated data to Parquet format
     """
     os.makedirs(CURATED_DATA_DIR, exist_ok=True)
 
@@ -68,7 +78,7 @@ def main():
     print("📥 Reading raw data...")
     raw_df = read_raw_data()
 
-    print(f"🔄 Transforming {len(raw_df)} records...")
+    print(f"🔄 Transforming {len(raw_df)} raw records...")
     curated_df = transform_data(raw_df)
 
     print("📦 Writing curated data...")
