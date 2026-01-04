@@ -1,0 +1,16 @@
+# Environment variables (secrets)
+.env
+
+# Data directories (never commit data)
+data/raw/
+data/curated/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# VS Code
+.vscode/
+
+# OS files
+.DS_Store
